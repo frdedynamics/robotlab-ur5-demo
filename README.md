@@ -1,4 +1,4 @@
-# ur5-demo
+# robotlab-ur5-demo
 
 simple test to demonstrate controlling ur5 from matlab.
 
