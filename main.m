@@ -34,7 +34,11 @@ if norm(latest_joint_positions-ur5_home_joint_positions,2) < 10e-06
         end    
         
         moverobotJoint(tcpip_socket_connection, latest_joint_commands);
-        pause(10);
+        pause(1);
+        closeGripper(tcpip_socket_connection);
+        pause(2);
+        openGripper(tcpip_socket_connection);
+        pause(5);
         
         latest_joint_positions = readrobotJoint(tcpip_socket_connection);
         latest_position_error = norm(latest_joint_positions-latest_joint_commands,2);
