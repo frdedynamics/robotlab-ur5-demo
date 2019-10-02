@@ -11,14 +11,16 @@
      Call SubP_rq_open_and_wait
      receive_data≔[6,0,0,0,0,0,0]
      Move_To_Joints≔[0,-1.5708,0,-1.5708,0,0]
-     Move_To_Tcp≔p[0.100,-0.175,0.700,-1.2,2.5,-0.8]
+     'Move_To_Tcp≔p[0.100,-0.175,0.700,-1.2,2.5,-0.8]'
+     Move_To_Tcp≔get_target_tcp_pose()
+     Move_To_Gripper≔[0]
      Call SubProgram_3
      socket_close("robot_socket")
      sleep(2)
-     socket_open("172.31.1.77",30000,"robot_socket")
+     socket_open("172.31.1.21",30000,"robot_socket")
      task≔[0,0]
      coop≔0
-     tcp_ctrl≔ True 
+     tcp_ctrl≔ False 
    Robot Program
      'MoveJ'
      'coop≔1'
@@ -44,6 +46,8 @@
        Call SubProgram_1
      ElseIf task[1]≟6
        Call SubP_set_tcp
+     ElseIf task[1]≟7
+       Call SubP_set_grip
      Wait: 0
    Thread_1
      If coop≟1
@@ -58,6 +62,8 @@
        Else
          movel(Move_To_Tcp,a=0.1,v=0.15,r=0)
        Wait: 0.01
+   Thread_2
+     rq_move(Move_To_Gripper[0])
    SubProgram_1
      receive_data=socket_read_ascii_float(6,"robot_socket")
      If receive_data[0]≠6
@@ -78,6 +84,17 @@
        pointer≔0
        While pointer<receive_data[0]
          Move_To_Tcp[pointer]=receive_data[pointer+1]
+         pointer≔pointer+1
+       task≔[0,0]
+   SubP_set_grip
+     receive_data=socket_read_ascii_float(1,"robot_socket")
+     If receive_data[0]≠1
+       socket_send_string("0","robot_socket")
+     Else
+       socket_send_string("1","robot_socket")
+       pointer≔0
+       While pointer<receive_data[0]
+         Move_To_Gripper[pointer]=receive_data[pointer+1]
          pointer≔pointer+1
        task≔[0,0]
    SubProgram_2

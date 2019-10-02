@@ -19,13 +19,15 @@ def mojo_socket():
   set_gravity([0.0, 0.0, 9.82])
   joy_x=100
   varmsg("joy_x",joy_x)
+  Plane_1=p[-0.26513175587789256,-0.461841503836437,-0.09815214509813479,2.1410039208547103,-2.271772538745896,0.019817272335666127]
+  varmsg("Plane_1",Plane_1)
   rq_force=0
   varmsg("rq_force",rq_force)
   rq_obj_detect=0
   varmsg("rq_obj_detect",rq_obj_detect)
   rq_speed=0
   varmsg("rq_speed",rq_speed)
-  $ 60 "SubProgram_1"
+  $ 66 "SubProgram_1"
   def SubProgram_1():
     receive_data=socket_read_ascii_float(6,"robot_socket")
     if (receive_data[0] !=6):
@@ -43,7 +45,7 @@ def mojo_socket():
       varmsg("task",task)
     end
   end
-  $ 71 "SubP_set_tcp"
+  $ 77 "SubP_set_tcp"
   def SubP_set_tcp():
     receive_data=socket_read_ascii_float(6,"robot_socket")
     if (receive_data[0] !=6):
@@ -61,12 +63,30 @@ def mojo_socket():
       varmsg("task",task)
     end
   end
-  $ 82 "SubProgram_2"
+  $ 88 "SubP_set_grip"
+  def SubP_set_grip():
+    receive_data=socket_read_ascii_float(1,"robot_socket")
+    if (receive_data[0] !=1):
+      socket_send_string("0","robot_socket")
+    else:
+      socket_send_string("1","robot_socket")
+      global pointer = 0
+      varmsg("pointer",pointer)
+      while (pointer <receive_data[0]):
+        Move_To_Gripper[pointer]=receive_data[pointer+1]
+        global pointer = pointer+1
+        varmsg("pointer",pointer)
+      end
+      global task = [0,0]
+      varmsg("task",task)
+    end
+  end
+  $ 99 "SubProgram_2"
   def SubProgram_2():
     pose_1=get_joint_positions()
     socket_send_string(pose_1,"robot_socket")
   end
-  $ 85 "SubProgram_3"
+  $ 102 "SubProgram_3"
   def SubProgram_3():
     pose_1=get_joint_positions()
     global pointer = 0
@@ -77,27 +97,27 @@ def mojo_socket():
       varmsg("pointer",pointer)
     end
   end
-  $ 91 "SubP_rq_activate_and_wait"
+  $ 108 "SubP_rq_activate_and_wait"
   def SubP_rq_activate_and_wait():
     rq_activate_and_wait()
   end
-  $ 93 "SubP_rq_close_and_wait"
+  $ 110 "SubP_rq_close_and_wait"
   def SubP_rq_close_and_wait():
     rq_close_and_wait()
   end
-  $ 95 "SubP_rq_open_and_wait"
+  $ 112 "SubP_rq_open_and_wait"
   def SubP_rq_open_and_wait():
     rq_open_and_wait()
   end
-  $ 97 "SubP_rq_is_object_detected"
+  $ 114 "SubP_rq_is_object_detected"
   def SubP_rq_is_object_detected():
     rq_is_object_detected()
   end
-  $ 99 "SubP_rq_set_force"
+  $ 116 "SubP_rq_set_force"
   def SubP_rq_set_force():
     rq_set_force(rq_force)
   end
-  $ 101 "SubP_rq_set_speed"
+  $ 118 "SubP_rq_set_speed"
   def SubP_rq_set_speed():
     rq_set_speed(rq_speed)
   end
@@ -669,40 +689,50 @@ def mojo_socket():
   $ 12 "Move_To_Joints≔[0,-1.5708,0,-1.5708,0,0]"
   global Move_To_Joints = [0,-1.5708,0,-1.5708,0,0]
   varmsg("Move_To_Joints",Move_To_Joints)
-  $ 13 "Move_To_Tcp≔p[0.100,-0.175,0.700,-1.2,2.5,-0.8]"
-  global Move_To_Tcp = p[0.100,-0.175,0.700,-1.2,2.5,-0.8]
+  $ 14 "Move_To_Tcp≔get_target_tcp_pose()"
+  global Move_To_Tcp = get_target_tcp_pose()
   varmsg("Move_To_Tcp",Move_To_Tcp)
-  $ 14 "Call SubProgram_3"
+  $ 15 "Move_To_Gripper≔[0]"
+  global Move_To_Gripper = [0]
+  varmsg("Move_To_Gripper",Move_To_Gripper)
+  $ 16 "Call SubProgram_3"
   SubProgram_3()
-  $ 15 "socket_close('robot_socket')"
+  $ 17 "socket_close('robot_socket')"
   socket_close("robot_socket")
-  $ 16 "sleep(2)"
+  $ 18 "sleep(2)"
   sleep(2)
-  $ 17 "socket_open('172.31.1.77',30000,'robot_socket')"
-  socket_open("172.31.1.77",30000,"robot_socket")
-  $ 18 "task≔[0,0]"
+  $ 19 "socket_open('172.31.1.21',30000,'robot_socket')"
+  socket_open("172.31.1.21",30000,"robot_socket")
+  $ 20 "task≔[0,0]"
   global task = [0,0]
   varmsg("task",task)
-  $ 19 "coop≔0"
+  $ 21 "coop≔0"
   global coop = 0
   varmsg("coop",coop)
-  $ 20 "tcp_ctrl≔ True "
-  global tcp_ctrl =   True  
+  $ 22 "tcp_ctrl≔ False "
+  global tcp_ctrl =   False  
   varmsg("tcp_ctrl",tcp_ctrl)
-  $ 47 "Thread_1"
+  $ 64 "Thread_2"
+  thread Thread_2():
+    while True:
+      rq_move(Move_To_Gripper[0])
+    end
+  end
+  threadId_Thread_2 = run Thread_2()
+  $ 51 "Thread_1"
   thread Thread_1():
     while True:
       if (coop ==1):
         while (coop ==1):
-          thread Force_properties_calculation_thread_50():
+          thread Force_properties_calculation_thread_54():
             while (True):
               force_mode(p[0.0,0.0,0.0,0.0,0.0,0.0], [1, 1, 1, 1, 1, 1], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 2, [0.15, 0.15, 0.15, 1.0471975511965976, 1.0471975511965976, 1.0471975511965976])
               sync()
             end
           end
-          global thread_handler_50 = run Force_properties_calculation_thread_50()
+          global thread_handler_54 = run Force_properties_calculation_thread_54()
           sleep(0.01)
-          kill thread_handler_50
+          kill thread_handler_54
           end_force_mode()
         end
         global coop = 0
@@ -720,62 +750,68 @@ def mojo_socket():
   end
   threadId_Thread_1 = run Thread_1()
   while (True):
-    $ 21 "Robot Program"
-    $ 26 "task=socket_read_ascii_float(1,'robot_socket')"
+    $ 23 "Robot Program"
+    $ 28 "task=socket_read_ascii_float(1,'robot_socket')"
     task=socket_read_ascii_float(1,"robot_socket")
-    $ 27 "If task[1]≟2"
+    $ 29 "If task[1]≟2"
     if (task[1] ==2):
-      $ 28 "Call SubProgram_2"
+      $ 30 "Call SubProgram_2"
       SubProgram_2()
-      $ 29 "task≔[0,0]"
+      $ 31 "task≔[0,0]"
       global task = [0,0]
       varmsg("task",task)
     else:
-      $ 30 "ElseIf task[1]≟3"
+      $ 32 "ElseIf task[1]≟3"
       if (task[1] ==3):
-        $ 31 "Call SubP_rq_open_and_wait"
+        $ 33 "Call SubP_rq_open_and_wait"
         SubP_rq_open_and_wait()
-        $ 32 "socket_send_string('1','robot_socket')"
+        $ 34 "socket_send_string('1','robot_socket')"
         socket_send_string("1","robot_socket")
-        $ 33 "task≔[0,0]"
+        $ 35 "task≔[0,0]"
         global task = [0,0]
         varmsg("task",task)
       else:
-        $ 34 "ElseIf task[1]≟4"
+        $ 36 "ElseIf task[1]≟4"
         if (task[1] ==4):
-          $ 35 "Call SubP_rq_close_and_wait"
+          $ 37 "Call SubP_rq_close_and_wait"
           SubP_rq_close_and_wait()
-          $ 36 "socket_send_string('1','robot_socket')"
+          $ 38 "socket_send_string('1','robot_socket')"
           socket_send_string("1","robot_socket")
-          $ 37 "task≔[0,0]"
+          $ 39 "task≔[0,0]"
           global task = [0,0]
           varmsg("task",task)
         else:
-          $ 38 "ElseIf task[1]≟5"
+          $ 40 "ElseIf task[1]≟5"
           if (task[1] ==5):
-            $ 39 "tcp_pose=get_actual_tcp_pose()"
+            $ 41 "tcp_pose=get_actual_tcp_pose()"
             tcp_pose=get_actual_tcp_pose()
-            $ 40 "socket_send_string(tcp_pose,'robot_socket')"
+            $ 42 "socket_send_string(tcp_pose,'robot_socket')"
             socket_send_string(tcp_pose,"robot_socket")
-            $ 41 "task≔[0,0]"
+            $ 43 "task≔[0,0]"
             global task = [0,0]
             varmsg("task",task)
           else:
-            $ 42 "ElseIf task[1]≟1"
+            $ 44 "ElseIf task[1]≟1"
             if (task[1] ==1):
-              $ 43 "Call SubProgram_1"
+              $ 45 "Call SubProgram_1"
               SubProgram_1()
             else:
-              $ 44 "ElseIf task[1]≟6"
+              $ 46 "ElseIf task[1]≟6"
               if (task[1] ==6):
-                $ 45 "Call SubP_set_tcp"
+                $ 47 "Call SubP_set_tcp"
                 SubP_set_tcp()
+              else:
+                $ 48 "ElseIf task[1]≟7"
+                if (task[1] ==7):
+                  $ 49 "Call SubP_set_grip"
+                  SubP_set_grip()
+                end
               end
             end
           end
         end
       end
     end
-    $ 46 "Wait: 0"
+    $ 50 "Wait: 0"
   end
 end
